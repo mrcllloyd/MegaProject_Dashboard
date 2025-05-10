@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from fpdf import FPDF
-from io import BytesIO
-import tempfile
 
 # Load datasets
 @st.cache_data
@@ -67,11 +64,22 @@ else:
 st.title("🎯 Player Risk Dashboard")
 st.write(f"📅 Date Range: {start_date.date()} to {end_date.date()}  |  SP_NAME: {selected_sp}  |  Granularity: {granularity}")
 
+# One-click PDF export button
 st.markdown("""
-### 📄 To download a visual copy of this dashboard:
-- Click the **⋮ menu** in the upper-right corner of the page
-- Select **Print** or **Save as PDF** from your browser
-""")
+### 📥 One-click PDF Export
+Click the button below to save a printable version of this dashboard as a PDF.
+<button onclick="window.print()" style="
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 1rem;">
+🖨️ Download Dashboard as PDF
+</button>
+""", unsafe_allow_html=True)
 
 # Time Series Summary
 summary = filtered.groupby('period').agg(
