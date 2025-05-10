@@ -64,8 +64,8 @@ else:
     filtered['period'] = filtered['reportdate'].dt.to_period("Y").dt.start_time
 
 # Header
-st.title(" Player Risk Dashboard")
-st.write(f" Date Range: {start_date.date()} to {end_date.date()}  |  SP_NAME: {selected_sp}  |  Granularity: {granularity}")
+st.title("🎯 Player Risk Dashboard")
+st.write(f"📅 Date Range: {start_date.date()} to {end_date.date()}  |  SP_NAME: {selected_sp}  |  Granularity: {granularity}")
 
 # Time Series Summary
 summary = filtered.groupby('period').agg(
@@ -74,7 +74,7 @@ summary = filtered.groupby('period').agg(
     total_hold=('holdamount', 'sum')
 ).reset_index()
 
-st.subheader(f" Wager Trend Over Time for {selected_sp}")
+st.subheader(f"📈 Wager Trend Over Time for {selected_sp}")
 st.line_chart(summary.set_index('period')['total_wager'])
 
 # Player Risk Flags
@@ -93,9 +93,11 @@ player_metrics['daily_spike_flag'] = player_metrics['avg_wager_per_day'] >= 2000
 
 flag_summary = player_metrics.groupby('occupation')[['big_bet_flag', 'high_freq_flag', 'daily_spike_flag']].sum()
 
-st.subheader(" Risk Flags by Occupation")
+st.subheader("🚩 Risk Flags by Occupation")
 if not flag_summary.empty:
     st.bar_chart(flag_summary)
+else:
+    st.info("No risk flags detected for the selected date range and SP_NAME.")
 
 # Risk Level Summary
 risk_summary = filtered.groupby('risk_level').agg(
@@ -104,12 +106,12 @@ risk_summary = filtered.groupby('risk_level').agg(
     total_hold=('holdamount', 'sum')
 ).reset_index()
 
-st.subheader(" Risk Level Distribution")
+st.subheader("📊 Risk Level Distribution")
 st.dataframe(risk_summary)
 st.bar_chart(filtered['risk_level'].value_counts())
 
 # Top Players
-st.subheader(f" Top 10 Players by Wager for {selected_sp}")
+st.subheader(f"🏅 Top 10 Players by Wager for {selected_sp}")
 top_players = filtered.sort_values(by='wageramount', ascending=False).head(10)[[
     'playerid', 'gamename', 'wageramount', 'holdamount', 'risk_level', 'occupation'
 ]]
@@ -160,16 +162,15 @@ def create_pdf_with_charts():
 
     for idx, row in risk_summary.iterrows():
         line = f"{row['risk_level']}: {row['unique_players']} players | Wager: ₱{row['total_wager']:.2f}"
-        pdf.cell(200, 10, txt=line, ln=True)
+        pdf.cell(200, 10, txt=line.encode('latin-1', 'replace').decode('latin-1'), ln=True)
 
     for title, path in charts.items():
         pdf.add_page()
         pdf.image(path, x=10, y=20, w=190)
 
-    binary_pdf = pdf.output(dest='S').encode('latin-1')
-    return BytesIO(binary_pdf)
+    return BytesIO(pdf.output(dest='S').encode('latin-1', 'replace'))
 
-if st.button(" Download Full Dashboard (PDF)"):
+if st.button("📥 Download Full Dashboard (PDF)"):
     pdf_file = create_pdf_with_charts()
     st.download_button(label="Download Dashboard as PDF",
                        data=pdf_file,
