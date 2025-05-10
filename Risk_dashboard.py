@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from fpdf import FPDF
-from io import BytesIO
 import tempfile
 
 # Load datasets
@@ -118,7 +117,6 @@ top_players = filtered.sort_values(by='wageramount', ascending=False).head(10)[[
 st.dataframe(top_players)
 
 # PDF Export
-from fpdf import FPDF
 
 def save_chart_as_image(fig):
     tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
@@ -169,12 +167,15 @@ def generate_pdf():
         txt = f"{row['playerid']} | {row['gamename']} | {row['risk_level']} | ₱{row['wageramount']:.2f}"
         pdf.cell(0, 8, txt, ln=True)
 
-    pdf_output = BytesIO()
-    pdf_output.write(pdf.output(dest='S').encode('latin1'))
-    pdf_output.seek(0)
-    return pdf_output
+    temp_pdf = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf.output(temp_pdf.name)
+    return temp_pdf.name
 
 st.markdown("---")
-if st.button("📄 Download Full PDF Report"):
-    pdf_file = generate_pdf()
-    st.download_button(label="Download PDF", data=pdf_file, file_name="dashboard_report.pdf", mime="application/pdf")
+if st.button("📄 Generate Full PDF Report"):
+    pdf_path = generate_pdf()
+    with open(pdf_path, "rb") as f:
+        st.download_button(label="Download PDF",
+                           data=f.read(),
+                           file_name="dashboard_report.pdf",
+                           mime="application/pdf")
