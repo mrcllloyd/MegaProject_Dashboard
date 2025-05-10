@@ -64,23 +64,6 @@ else:
 st.title("🎯 Player Risk Dashboard")
 st.write(f"📅 Date Range: {start_date.date()} to {end_date.date()}  |  SP_NAME: {selected_sp}  |  Granularity: {granularity}")
 
-# One-click PDF export button
-st.markdown("""
-### 📥 One-click PDF Export
-Click the button below to save a printable version of this dashboard as a PDF.
-<button onclick="window.print()" style="
-    background-color: #4CAF50;
-    color: white;
-    padding: 12px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-bottom: 1rem;">
-🖨️ Download Dashboard as PDF
-</button>
-""", unsafe_allow_html=True)
-
 # Time Series Summary
 summary = filtered.groupby('period').agg(
     total_players=('playerid', 'nunique'),
@@ -130,3 +113,20 @@ top_players = filtered.sort_values(by='wageramount', ascending=False).head(10)[[
     'playerid', 'gamename', 'wageramount', 'holdamount', 'risk_level', 'occupation'
 ]]
 st.dataframe(top_players)
+
+# One-click PDF export button at the bottom
+st.markdown("""
+### 📥 One-click PDF Export
+Click the button below to save a printable version of this dashboard as a PDF.
+<button onclick="window.print()" style="
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 2rem;">
+🖨️ Download Dashboard as PDF
+</button>
+""", unsafe_allow_html=True)
