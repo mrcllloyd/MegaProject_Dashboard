@@ -2,23 +2,15 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-# Custom CSS to hide sidebar and Streamlit elements when printing
-st.markdown("""
-<style>
-@media print {
-    .css-1lcbmhc.e1fqkh3o3 { display: none !important; }  /* sidebar */
-    .stActionButton, .stDownloadButton, .st-emotion-cache-1dp5vir { display: none !important; }
-    header, footer { display: none !important; }
-}
-</style>
-""", unsafe_allow_html=True)
+from fpdf import FPDF
+from io import BytesIO
+import tempfile
 
 # Load datasets
 @st.cache_data
 def load_data():
-    player_info = pd.read_csv("player_info.csv")
-    usage = pd.read_csv("sp1_dw_aggr.csv")
+    player_info = pd.read_csv("data/player_info.csv")
+    usage = pd.read_csv("data/sp1_dw_aggr.csv")
 
     usage['playerid'] = usage['playerid'].astype(str)
     usage['reportdate'] = pd.to_datetime(usage['date_time'])
@@ -125,11 +117,64 @@ top_players = filtered.sort_values(by='wageramount', ascending=False).head(10)[[
 ]]
 st.dataframe(top_players)
 
-# Printable instruction at the bottom
-st.markdown("""
-### 📥 Download Dashboard as PDF
-To export this dashboard visually:
-- Click the **three dots (⋮)** in the top-right corner of this page
-- Choose **“Print”**
-- Then select **“Save as PDF”**
-""")
+# PDF Export
+from fpdf import FPDF
+
+def save_chart_as_image(fig):
+    tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+    fig.savefig(tmpfile.name, dpi=300, bbox_inches='tight')
+    return tmpfile.name
+
+def generate_pdf():
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, f"Player Risk Dashboard - {selected_sp}", ln=True, align="C")
+    pdf.ln(5)
+
+    pdf.set_font("Arial", '', 12)
+    pdf.multi_cell(0, 10, f"Date Range: {start_date.date()} to {end_date.date()}\nGranularity: {granularity}")
+
+    # Charts to images
+    figs = []
+    if not summary.empty:
+        fig, ax = plt.subplots()
+        ax.plot(summary['period'], summary['total_wager'], marker='o')
+        ax.set_title("Wager Trend")
+        ax.set_ylabel("Total Wager")
+        figs.append(save_chart_as_image(fig))
+
+    if not flag_summary.empty:
+        fig, ax = plt.subplots()
+        flag_summary.plot(kind='bar', stacked=True, ax=ax)
+        ax.set_title("Risk Flags by Occupation")
+        figs.append(save_chart_as_image(fig))
+
+    fig, ax = plt.subplots()
+    sns.countplot(data=filtered, x='risk_level', ax=ax)
+    ax.set_title("Risk Level Distribution")
+    figs.append(save_chart_as_image(fig))
+
+    for img in figs:
+        pdf.add_page()
+        pdf.image(img, x=10, y=30, w=190)
+
+    # Add table of top players
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "Top 10 Players", ln=True)
+    pdf.set_font("Arial", '', 10)
+    for _, row in top_players.iterrows():
+        txt = f"{row['playerid']} | {row['gamename']} | {row['risk_level']} | ₱{row['wageramount']:.2f}"
+        pdf.cell(0, 8, txt, ln=True)
+
+    pdf_output = BytesIO()
+    pdf_output.write(pdf.output(dest='S').encode('latin1'))
+    pdf_output.seek(0)
+    return pdf_output
+
+st.markdown("---")
+if st.button("📄 Download Full PDF Report"):
+    pdf_file = generate_pdf()
+    st.download_button(label="Download PDF", data=pdf_file, file_name="dashboard_report.pdf", mime="application/pdf")
