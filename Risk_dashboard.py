@@ -3,6 +3,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Custom CSS to hide sidebar and Streamlit elements when printing
+st.markdown("""
+<style>
+@media print {
+    .css-1lcbmhc.e1fqkh3o3 { display: none !important; }  /* sidebar */
+    .stActionButton, .stDownloadButton, .st-emotion-cache-1dp5vir { display: none !important; }
+    header, footer { display: none !important; }
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Load datasets
 @st.cache_data
 def load_data():
@@ -114,19 +125,11 @@ top_players = filtered.sort_values(by='wageramount', ascending=False).head(10)[[
 ]]
 st.dataframe(top_players)
 
-# One-click PDF export button at the bottom
+# Printable instruction at the bottom
 st.markdown("""
-### 📥 One-click PDF Export
-Click the button below to save a printable version of this dashboard as a PDF.
-<button onclick="window.print()" style="
-    background-color: #4CAF50;
-    color: white;
-    padding: 12px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 2rem;">
-🖨️ Download Dashboard as PDF
-</button>
-""", unsafe_allow_html=True)
+### 📥 Download Dashboard as PDF
+To export this dashboard visually:
+- Click the **three dots (⋮)** in the top-right corner of this page
+- Choose **“Print”**
+- Then select **“Save as PDF”**
+""")
