@@ -4,5 +4,4 @@ seaborn
 streamlit
 openpyxl
 fpdf
-io
 tempfile
