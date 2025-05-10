@@ -67,6 +67,12 @@ else:
 st.title("🎯 Player Risk Dashboard")
 st.write(f"📅 Date Range: {start_date.date()} to {end_date.date()}  |  SP_NAME: {selected_sp}  |  Granularity: {granularity}")
 
+st.markdown("""
+### 📄 To download a visual copy of this dashboard:
+- Click the **⋮ menu** in the upper-right corner of the page
+- Select **Print** or **Save as PDF** from your browser
+""")
+
 # Time Series Summary
 summary = filtered.groupby('period').agg(
     total_players=('playerid', 'nunique'),
@@ -116,63 +122,3 @@ top_players = filtered.sort_values(by='wageramount', ascending=False).head(10)[[
     'playerid', 'gamename', 'wageramount', 'holdamount', 'risk_level', 'occupation'
 ]]
 st.dataframe(top_players)
-
-# PDF Export with Charts
-def create_charts():
-    temp_files = {}
-
-    # Chart 1: Wager Trend
-    fig1, ax1 = plt.subplots()
-    ax1.plot(summary['period'], summary['total_wager'], marker='o')
-    ax1.set_title("Wager Trend Over Time")
-    ax1.set_ylabel("Total Wager")
-    fig1.tight_layout()
-    temp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-    fig1.savefig(temp1.name)
-    temp_files['trend'] = temp1.name
-
-    # Chart 2: Risk Level Distribution
-    fig2, ax2 = plt.subplots()
-    sns.countplot(data=filtered, x='risk_level', ax=ax2)
-    ax2.set_title("Player Count by Risk Level")
-    fig2.tight_layout()
-    temp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-    fig2.savefig(temp2.name)
-    temp_files['risk'] = temp2.name
-
-    # Chart 3: Risk Flags (optional if empty)
-    if not flag_summary.empty:
-        fig3, ax3 = plt.subplots(figsize=(10, 5))
-        flag_summary.plot(kind='bar', stacked=True, ax=ax3)
-        ax3.set_title("Risk Flags by Occupation")
-        fig3.tight_layout()
-        temp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-        fig3.savefig(temp3.name)
-        temp_files['flags'] = temp3.name
-
-    return temp_files
-
-def create_pdf_with_charts():
-    charts = create_charts()
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt=f"Player Risk Dashboard for {selected_sp}", ln=True, align="C")
-    pdf.ln(10)
-
-    for idx, row in risk_summary.iterrows():
-        line = f"{row['risk_level']}: {row['unique_players']} players | Wager: ₱{row['total_wager']:.2f}"
-        pdf.cell(200, 10, txt=line.encode('latin-1', 'replace').decode('latin-1'), ln=True)
-
-    for title, path in charts.items():
-        pdf.add_page()
-        pdf.image(path, x=10, y=20, w=190)
-
-    return BytesIO(pdf.output(dest='S').encode('latin-1', 'replace'))
-
-if st.button("📥 Download Full Dashboard (PDF)"):
-    pdf_file = create_pdf_with_charts()
-    st.download_button(label="Download Dashboard as PDF",
-                       data=pdf_file,
-                       file_name=f"risk_dashboard_{selected_sp}.pdf",
-                       mime="application/pdf")
