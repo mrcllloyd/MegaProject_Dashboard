@@ -94,7 +94,8 @@ player_metrics['daily_spike_flag'] = player_metrics['avg_wager_per_day'] >= 2000
 flag_summary = player_metrics.groupby('occupation')[['big_bet_flag', 'high_freq_flag', 'daily_spike_flag']].sum()
 
 st.subheader(" Risk Flags by Occupation")
-st.bar_chart(flag_summary)
+if not flag_summary.empty:
+    st.bar_chart(flag_summary)
 
 # Risk Level Summary
 risk_summary = filtered.groupby('risk_level').agg(
@@ -137,14 +138,15 @@ def create_charts():
     fig2.savefig(temp2.name)
     temp_files['risk'] = temp2.name
 
-    # Chart 3: Risk Flags
-    fig3, ax3 = plt.subplots(figsize=(10, 5))
-    flag_summary.plot(kind='bar', stacked=True, ax=ax3)
-    ax3.set_title("Risk Flags by Occupation")
-    fig3.tight_layout()
-    temp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-    fig3.savefig(temp3.name)
-    temp_files['flags'] = temp3.name
+    # Chart 3: Risk Flags (optional if empty)
+    if not flag_summary.empty:
+        fig3, ax3 = plt.subplots(figsize=(10, 5))
+        flag_summary.plot(kind='bar', stacked=True, ax=ax3)
+        ax3.set_title("Risk Flags by Occupation")
+        fig3.tight_layout()
+        temp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+        fig3.savefig(temp3.name)
+        temp_files['flags'] = temp3.name
 
     return temp_files
 
@@ -164,10 +166,8 @@ def create_pdf_with_charts():
         pdf.add_page()
         pdf.image(path, x=10, y=20, w=190)
 
-    pdf_output = BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
-    return pdf_output
+    binary_pdf = pdf.output(dest='S').encode('latin-1')
+    return BytesIO(binary_pdf)
 
 if st.button(" Download Full Dashboard (PDF)"):
     pdf_file = create_pdf_with_charts()
@@ -175,4 +175,3 @@ if st.button(" Download Full Dashboard (PDF)"):
                        data=pdf_file,
                        file_name=f"risk_dashboard_{selected_sp}.pdf",
                        mime="application/pdf")
-
